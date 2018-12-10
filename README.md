@@ -1,0 +1,3 @@
+# pyurl
+pyurl is a curl-like http client python implementation.
+This project is for my understanding HTTP protocols...
