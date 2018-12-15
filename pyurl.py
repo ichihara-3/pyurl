@@ -10,7 +10,7 @@ class Url(object):
 
     _patterns = {
         'scheme': r"(?P<scheme>http?)",
-        'host': r"(?P<host>[a-zA-Z0-9$\- .+!*'(),%]+|[0-9]+\.[0-9]+\/[0-9]+\.[0-9]+)",
+        'host': r"(?P<host>[a-zA-Z0-9$\- .+!*'(),%]+|[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+)",
         'port': r"(?P<port>[0-9]+)",
         'path': r"(?P<path>[a-zA-Z0-9$/\-.+ !*'(),%;&=]+)",
         'query': r"(?P<query>[a-zA-Z0-9$\- .+!*'(),%;?&=]+)",
@@ -103,7 +103,8 @@ class Pyurl(object):
             return Response(data)
 
 
-def main(*args, **kwargs):
+def main():
+    kwargs = from_commandline()
     pyurl = Pyurl()
     response = pyurl.request(Url(kwargs.get('url')))
     print(response)
@@ -118,5 +119,4 @@ def from_commandline():
 
 
 if __name__ == '__main__':
-    args = from_commandline()
-    main(**args)
+    main()
