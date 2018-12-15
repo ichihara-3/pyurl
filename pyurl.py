@@ -1,6 +1,7 @@
 # coding: utf-8
 
 from argparse import ArgumentParser
+import itertools
 import re
 import socket
 import sys
@@ -67,7 +68,15 @@ class Response(object):
 
     @property
     def status(self):
-        self._decoded.split('\r\n')[0]
+        return self._decoded.splitlines()[0]
+
+    @property
+    def header(self):
+        return '\n'.join(list(itertools.takewhile(lambda x: bool(x), self._decoded.splitlines()))[1:])
+
+    @property
+    def body(self):
+        return '\n'.join(list(itertools.dropwhile(lambda x: bool(x), self._decoded.splitlines()))[1:])
 
 
 class Pyurl(object):
@@ -80,11 +89,11 @@ class Pyurl(object):
         for af, socktype, proto, canonname, sa in addresses:
             try:
                 s = socket.socket(af, socktype, proto)
-            except OSError as msg:
+            except OSError:
                 continue
             try:
                 s.connect(sa)
-            except OSError as msg:
+            except OSError:
                 s = None
                 continue
             break
@@ -94,11 +103,11 @@ class Pyurl(object):
         with s:
             headers = ['Host: {host}'.format(host=url.host)]
             request = '{method} {path} HTTP/1.1\r\n'.format(method='GET', path=url.path).encode('utf-8') + \
-                   '{headers}\r\n\r\n'.format(headers='\r\n'.join(headers)).encode('utf-8') + \
-                   '{query}'.format(query=url.query).encode('utf-8')
+                '{headers}\r\n\r\n'.format(headers='\r\n'.join(headers)).encode('utf-8') + \
+                '{query}'.format(query=url.query).encode('utf-8')
             s.sendall(request)
 
-            data = s.recv(1024)
+            data = s.recv(4096)
 
             return Response(data)
 
@@ -106,16 +115,24 @@ class Pyurl(object):
 def main():
     kwargs = from_commandline()
     pyurl = Pyurl()
-    response = pyurl.request(Url(kwargs.get('url')))
-    print(response)
-    print(response.status)
+    response = pyurl.request(Url(kwargs.url))
+
+    if kwargs.status:
+        print(response.status)
+    if kwargs.header:
+        print(response.header)
+    if kwargs.body:
+        print(response.body)
 
 
 def from_commandline():
     parser = ArgumentParser()
     parser.add_argument('url')
+    parser.add_argument('-s', '--status', default=False, action='store_true', help='output status line')
+    parser.add_argument('-H', '--header', default=False, action='store_true', help='output header lines')
+    parser.add_argument('-B', '--body', default=True, action='store_true', help='output header lines')
 
-    return vars(parser.parse_args())
+    return parser.parse_args()
 
 
 if __name__ == '__main__':
